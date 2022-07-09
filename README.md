@@ -18,9 +18,11 @@ npm init --yes
 
 # Puppeteer, Mocha, Chai
 
-npm i --save-dev puppeteer
+npm i -s @chainsafe/dappeteer
 npm i --save-dev mocha-puppeteer
 npm i --save-dev chai
+npm i --save-dev node
+npm i --save-dev web3
 ```
 
 ### Run

@@ -1,0 +1,28 @@
+{
+  "name": "onyxv3",
+  "version": "1.0.0",
+  "description": "Testing Jaypeggers daap",
+  "main": "index.js",
+  "scripts": {
+    "test": "node ./node_modules/mocha/bin/mocha --timeout=3000000 ./test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://onyxsec: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@github.com/onyxsec/jaypeggers-auto.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/onyxsec/jaypeggers-auto/issues"
+  },
+  "homepage": "https://github.com/onyxsec/jaypeggers-auto#readme",
+  "devDependencies": {
+    "@chainsafe/dappeteer": "^3.0.0-rc.0",
+    "chai": "^4.3.6",
+    "mocha": "^10.0.0",
+    "mocha-puppeteer": "^0.14.0",
+    "node": "^18.5.0",
+    "web3": "^1.7.4"
+  }
+}
