@@ -11,11 +11,7 @@
  const puppeteer = require('puppeteer')
  const dappeteer = require('@chainsafe/dappeteer')
 
- let browser
- let page
- let tabs
- let web3
- let currentEthBalance
+ let browser, page, tabs, web3, startingEthBalance, metamask
 
  before(async () => {
   browser = await dappeteer.launch(puppeteer, {
@@ -23,7 +19,7 @@
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   })
 
-  const metamask = await dappeteer.setupMetamask(browser, {
+  metamask = await dappeteer.setupMetamask(browser, {
     seed: config.METAMASK_MNEMONIC_PHRASE
   })
 
@@ -54,22 +50,39 @@
  })
  
  beforeEach(async () => {
-  currentEthBalance = await web3.eth.getBalance(config.WALLET_ADDRESS)
-  console.log("Current ETH Balance: " + currentEthBalance)
+  const rawStartingBalance = await web3.eth.getBalance(config.WALLET_ADDRESS)
+  startingEthBalance = web3.utils.fromWei(rawStartingBalance, 'ether')
+  console.log("Current ETH Balance: " + startingEthBalance)
 
-  if (currentEthBalance < 0.10) {
+  if (startingEthBalance < 0.10) {
     throw new Error('Not enough ETH to test')
   }
  })
  
  describe('Menu - Buy JAY', () => {
   it('buys JAY with ETH', async () => {
+    const convertAmt = 0.001
+
     await page.bringToFront()
     const menuItems = await page.$$(constants.MENU_ITEMS)
-    menuItems[5].click()
-    await delay(10000)
+    await menuItems[5].click()
+
+    await page.focus('div.MuiBox-root.css-0 > div > div > div > div:nth-child(1) > div > input')
+    await page.keyboard.type(convertAmt.toString())
+    await delay(6000) // btn needs to convert to clickable 'Buy'
+
+    const elements = await page.$x('//*[@id="root"]/div/div[2]/div[2]/div/div/button')
+    await elements[0].click()
+    await delay(6000) // wait for mm confirm
+    await metamask.confirmTransaction() 
+    await delay(30000) // wait for tx
+
+    const rawBalance = await web3.eth.getBalance(config.WALLET_ADDRESS)
+    const currentEthBalance = web3.utils.fromWei(rawBalance, 'ether')
+
+    // TODO take tx cost into account or approx range or log for visual compare or something...
+    expect(currentEthBalance).to.eql(startingEthBalance - convertAmt)
   })
- 
  })
  
  after(async () => {
@@ -82,10 +95,4 @@ function delay(time_in_ms) {
   return new Promise(function(resolve) { 
       setTimeout(resolve, time_in_ms)
   })
-}
-
-// Desc: get the converted eth value
-async function getEtherBalance() {
-  const rawBalance = await web3.eth.getBalance(config.WALLET_ADDRESS)
-  return web3.utils.fromWei(rawBalance, 'ether')
 }
