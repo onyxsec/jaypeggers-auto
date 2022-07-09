@@ -1,13 +1,15 @@
-# Puppeteer Examples
+# Jaypeggers Tests
 ## About The Project
 
-Testing Jaypeggers daap
+Testing Jaypeggers daap with metamask ext
 
-### Built With
+### References
 
 * [Puppeteer](https://pptr.dev/)
 * [Mocha](https://mochajs.org/)
 * [Chai Assertion](https://www.chaijs.com/)
+* [Dappeteer](https://github.com/decentraland/dappeteer)
+* [Web3](https://web3js.readthedocs.io/en/v1.7.4/)
 
 ### Prerequisites
 
@@ -16,8 +18,7 @@ Testing Jaypeggers daap
 npm install npm@latest -g
 npm init --yes
 
-# Puppeteer, Mocha, Chai
-
+# Testing Tools
 npm i -s @chainsafe/dappeteer
 npm i --save-dev mocha-puppeteer
 npm i --save-dev chai
