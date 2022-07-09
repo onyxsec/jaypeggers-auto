@@ -25,6 +25,8 @@ npm i --save-dev node
 npm i --save-dev web3
 ```
 
+You'll need a config.js at project root that contains sensitive data (ASK ME FOR TEMPLATE)
+
 ### Run
 
 ```sh
