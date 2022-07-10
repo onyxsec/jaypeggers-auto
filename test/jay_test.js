@@ -63,11 +63,10 @@
   console.log("Starting Block #: " + startingBlock.number)
  })
  
- describe('Menu - Buy JAY', () => {
-  it('buys JAY with 0.001 ETH', async () => {
+ describe('Jaypeggers TX Tests', () => {
+  it.skip('buys JAY with 0.001 ETH', async () => {
     const convertAmt = 0.001
 
-    await page.bringToFront()
     await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
       await menuItems[5].click()
     })
@@ -97,10 +96,9 @@
       expect(currentEthBalance).to.eql(startingEthBalance - convertAmt)
     })*/
   })
-  it('sells 0.001 JAY for ETH', async () => {
+  it.skip('sells 0.001 JAY for ETH', async () => {
     const convertAmt = 0.001
 
-    await page.bringToFront()
     await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
       await menuItems[4].click()
     })
@@ -121,6 +119,58 @@
     // Post tx verification
     let senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
     expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql('0') // should cost 0 eth
+  })
+  it.skip('buy 1 NFT for 1 JAY and 0.01 ETH', async () => {
+    const expectedEthCost = 0.01
+
+    await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
+      await menuItems[3].click()
+    })
+    
+    await page.waitForSelector('.imgPickerContainer')
+    await page.$$('.imgPickerContainer').then( async (elements) => {
+      await delay (3000) // TODO: without this, it doesn't click, only highlight
+      await elements[0].click()
+    })
+    
+    await delay(6000) // TODO: btn needs to convert to clickable 'Sell'
+    await page.$x('//*[@id="root"]/div/div[2]/div[2]/button').then( async (elements) => {
+      await elements[0].click()
+    })
+
+    await delay(6000) // TODO: wait for mm confirm btn, not sure how
+    await metamask.confirmTransaction() 
+    await delay(35000) // TODO: wait for tx, maybe stick in polling loop
+
+    // Post tx verification
+    let senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
+    expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql(expectedEthCost.toString()) // should cost 0.01 eth
+  })
+  it('sell 1 NFT for 0.001 ETH and receive JAY', async () => {
+    const expectedEthCost = 0.001
+
+    await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
+      await menuItems[2].click()
+    })
+    
+    await page.waitForSelector('.imgPickerContainer')
+    await page.$$('.imgPickerContainer').then( async (elements) => {
+      await delay (3000) // TODO: without this, it doesn't click, only highlight
+      await elements[0].click()
+    })
+    
+    await delay(6000) // TODO: btn needs to convert to clickable 'Sell'
+    await page.$x('//*[@id="root"]/div/div[2]/div[2]/button').then( async (elements) => {
+      await elements[0].click()
+    })
+
+    await delay(6000) // TODO: wait for mm confirm btn, not sure how
+    await metamask.confirmTransaction() 
+    await delay(35000) // TODO: wait for tx, maybe stick in polling loop
+
+    // Post tx verification
+    let senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
+    expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql(expectedEthCost.toString()) // should cost 0.001 eth
   })
  })
  
