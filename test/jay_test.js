@@ -50,6 +50,7 @@
  })
  
  beforeEach(async () => {
+  await page.bringToFront()
   await web3.eth.getBalance(config.WALLET_ADDRESS).then((rawStartingBalance) => {
     startingEthBalance = web3.utils.fromWei(rawStartingBalance, 'ether')
   })
@@ -63,7 +64,7 @@
  })
  
  describe('Menu - Buy JAY', () => {
-  it.skip('buys JAY with 0.001 ETH', async () => {
+  it('buys JAY with 0.001 ETH', async () => {
     const convertAmt = 0.001
 
     await page.bringToFront()
@@ -85,22 +86,7 @@
     await delay(35000) // TODO: wait for tx, maybe stick in polling loop
 
     // Post tx verification
-    let senderTxData
-    const endingBlock = await web3.eth.getBlock('latest')
-    console.log("Ending Block #: " + endingBlock.number)
-    for(let i = startingBlock.number; i <= endingBlock.number; i++) {
-      const currentBlock = await web3.eth.getBlock(i)
-      if (currentBlock != null && currentBlock.transactions != null) {
-        for (let txHash of currentBlock.transactions) {
-          let tx = await web3.eth.getTransaction(txHash)
-          if (config.WALLET_ADDRESS == tx.from) {
-            console.log('Transaction found on block: ' + i)
-            senderTxData = tx
-            console.log(senderTxData)
-          }
-        }
-      }
-    }
+    const senderTxData = await getSenderTx()
     expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql(convertAmt.toString()) // should cost 0.001 eth
 
     /*await web3.eth.getBalance(config.WALLET_ADDRESS).then((rawBalance) => {
@@ -111,7 +97,7 @@
       expect(currentEthBalance).to.eql(startingEthBalance - convertAmt)
     })*/
   })
-  it('sells 0.001 JAY with for ETH', async () => {
+  it('sells 0.001 JAY for ETH', async () => {
     const convertAmt = 0.001
 
     await page.bringToFront()
@@ -133,22 +119,7 @@
     await delay(35000) // TODO: wait for tx, maybe stick in polling loop
 
     // Post tx verification
-    let senderTxData
-    const endingBlock = await web3.eth.getBlock('latest')
-    console.log("Ending Block #: " + endingBlock.number)
-    for(let i = startingBlock.number; i <= endingBlock.number; i++) {
-      const currentBlock = await web3.eth.getBlock(i)
-      if (currentBlock != null && currentBlock.transactions != null) {
-        for (let txHash of currentBlock.transactions) {
-          let tx = await web3.eth.getTransaction(txHash)
-          if (config.WALLET_ADDRESS == tx.from) {
-            console.log('Transaction found on block: ' + i)
-            senderTxData = tx
-            console.log(senderTxData)
-          }
-        }
-      }
-    }
+    let senderTxData = await getSenderTx()
     expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql('0') // should cost 0 eth
   })
  })
@@ -161,4 +132,22 @@ function delay(time_in_ms) {
   return new Promise(function(resolve) { 
       setTimeout(resolve, time_in_ms)
   })
+}
+
+async function getSenderTx() {
+  const endingBlock = await web3.eth.getBlock('latest')
+  console.log("Ending Block #: " + endingBlock.number)
+  for(let i = startingBlock.number; i <= endingBlock.number; i++) {
+    const currentBlock = await web3.eth.getBlock(i)
+    if (currentBlock != null && currentBlock.transactions != null) {
+      for (let txHash of currentBlock.transactions) {
+        let tx = await web3.eth.getTransaction(txHash)
+        if (config.WALLET_ADDRESS == tx.from) {
+          console.log('Transaction found on block: ' + i)
+          console.log(tx)
+          return tx
+        }
+      }
+    }
+  }
 }
