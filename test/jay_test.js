@@ -11,7 +11,7 @@
  const puppeteer = require('puppeteer')
  const dappeteer = require('@chainsafe/dappeteer')
 
- let browser, page, tabs, web3, startingEthBalance, metamask
+ let browser, page, tabs, web3, startingEthBalance, startingBlock, metamask
 
  before(async () => {
   browser = await dappeteer.launch(puppeteer, {
@@ -54,14 +54,16 @@
     startingEthBalance = web3.utils.fromWei(rawStartingBalance, 'ether')
   })
   console.log("Current ETH Balance: " + startingEthBalance)
-
   if (startingEthBalance < 0.10) {
     throw new Error('Not enough ETH to test')
   }
+
+  startingBlock = await web3.eth.getBlock('latest')
+  console.log("Starting Block #: " + startingBlock.number)
  })
  
  describe('Menu - Buy JAY', () => {
-  it('buys JAY with ETH', async () => {
+  it('buys JAY with 0.001 ETH', async () => {
     const convertAmt = 0.001
 
     await page.bringToFront()
@@ -80,15 +82,34 @@
 
     await delay(6000) // TODO: wait for mm confirm btn, not sure how
     await metamask.confirmTransaction() 
-    await delay(30000) // TODO: wait for tx, maybe stick in polling loop
+    await delay(35000) // TODO: wait for tx, maybe stick in polling loop
 
-    await web3.eth.getBalance(config.WALLET_ADDRESS).then((rawBalance) => {
+    // Post tx verification
+    let senderTxData
+    const endingBlock = await web3.eth.getBlock('latest')
+    console.log("Ending Block #: " + endingBlock.number)
+    for(let i = startingBlock.number; i <= endingBlock.number; i++) {
+      const currentBlock = await web3.eth.getBlock(i)
+      if (currentBlock != null && currentBlock.transactions != null) {
+        for (let txHash of currentBlock.transactions) {
+          let tx = await web3.eth.getTransaction(txHash)
+          if (config.WALLET_ADDRESS == tx.from) {
+            console.log('Transaction found on block: ' + i)
+            senderTxData = tx//{sender: tx.from, receiver: tx.to, value: web3.utils.fromWei(tx.value, 'ether')}
+            console.log(senderTxData)
+          }
+        }
+      }
+    }
+    expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql(convertAmt.toString())
+
+    /*await web3.eth.getBalance(config.WALLET_ADDRESS).then((rawBalance) => {
       return web3.utils.fromWei(rawBalance, 'ether')
     })
     .then((currentEthBalance) => {
       // TODO: take tx cost into account or approx range or log for visual compare or something...
       expect(currentEthBalance).to.eql(startingEthBalance - convertAmt)
-    })
+    })*/
   })
  })
  
