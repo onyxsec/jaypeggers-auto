@@ -86,7 +86,7 @@
     await delay(35000) // TODO: wait for tx, maybe stick in polling loop
 
     // Post tx verification
-    const senderTxData = await getSenderTx()
+    const senderTxData = await getSenderTx(startingBlock)
     expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql(convertAmt.toString()) // should cost 0.001 eth
 
     /*await web3.eth.getBalance(config.WALLET_ADDRESS).then((rawBalance) => {
@@ -119,7 +119,7 @@
     await delay(35000) // TODO: wait for tx, maybe stick in polling loop
 
     // Post tx verification
-    let senderTxData = await getSenderTx()
+    let senderTxData = await getSenderTx(startingBlock)
     expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql('0') // should cost 0 eth
   })
  })
@@ -128,16 +128,18 @@
    await browser.close()
  })
 
+// Generic delay
 function delay(time_in_ms) {
   return new Promise(function(resolve) { 
       setTimeout(resolve, time_in_ms)
   })
 }
 
-async function getSenderTx() {
+// Searches blocks between start and current and returns first sender tx
+async function getSenderTx(startBlock) {
   const endingBlock = await web3.eth.getBlock('latest')
   console.log("Ending Block #: " + endingBlock.number)
-  for(let i = startingBlock.number; i <= endingBlock.number; i++) {
+  for(let i = startBlock.number; i <= endingBlock.number; i++) {
     const currentBlock = await web3.eth.getBlock(i)
     if (currentBlock != null && currentBlock.transactions != null) {
       for (let txHash of currentBlock.transactions) {
@@ -150,4 +152,5 @@ async function getSenderTx() {
       }
     }
   }
+  throw new Error('No sender transactions found...')
 }
