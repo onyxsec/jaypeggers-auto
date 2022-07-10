@@ -63,7 +63,7 @@
  })
  
  describe('Menu - Buy JAY', () => {
-  it('buys JAY with 0.001 ETH', async () => {
+  it.skip('buys JAY with 0.001 ETH', async () => {
     const convertAmt = 0.001
 
     await page.bringToFront()
@@ -95,13 +95,13 @@
           let tx = await web3.eth.getTransaction(txHash)
           if (config.WALLET_ADDRESS == tx.from) {
             console.log('Transaction found on block: ' + i)
-            senderTxData = tx//{sender: tx.from, receiver: tx.to, value: web3.utils.fromWei(tx.value, 'ether')}
+            senderTxData = tx
             console.log(senderTxData)
           }
         }
       }
     }
-    expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql(convertAmt.toString())
+    expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql(convertAmt.toString()) // should cost 0.001 eth
 
     /*await web3.eth.getBalance(config.WALLET_ADDRESS).then((rawBalance) => {
       return web3.utils.fromWei(rawBalance, 'ether')
@@ -110,6 +110,46 @@
       // TODO: take tx cost into account or approx range or log for visual compare or something...
       expect(currentEthBalance).to.eql(startingEthBalance - convertAmt)
     })*/
+  })
+  it('sells 0.001 JAY with for ETH', async () => {
+    const convertAmt = 0.001
+
+    await page.bringToFront()
+    await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
+      await menuItems[4].click()
+    })
+    
+    await page.focus('div.MuiBox-root.css-0 > div > div > div > div:nth-child(1) > div > input').then(() => {
+      page.keyboard.type(convertAmt.toString())
+    })
+    
+    await delay(6000) // TODO: btn needs to convert to clickable 'Sell', waitForXPath doesn't help
+    await page.$x("//button[contains(text(), 'Sell')]").then( async (elements) => {
+      await elements[0].click()
+    })
+
+    await delay(6000) // TODO: wait for mm confirm btn, not sure how
+    await metamask.confirmTransaction() 
+    await delay(35000) // TODO: wait for tx, maybe stick in polling loop
+
+    // Post tx verification
+    let senderTxData
+    const endingBlock = await web3.eth.getBlock('latest')
+    console.log("Ending Block #: " + endingBlock.number)
+    for(let i = startingBlock.number; i <= endingBlock.number; i++) {
+      const currentBlock = await web3.eth.getBlock(i)
+      if (currentBlock != null && currentBlock.transactions != null) {
+        for (let txHash of currentBlock.transactions) {
+          let tx = await web3.eth.getTransaction(txHash)
+          if (config.WALLET_ADDRESS == tx.from) {
+            console.log('Transaction found on block: ' + i)
+            senderTxData = tx
+            console.log(senderTxData)
+          }
+        }
+      }
+    }
+    expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql('0') // should cost 0 eth
   })
  })
  
