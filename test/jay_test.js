@@ -120,12 +120,24 @@
     let senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
     expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql('0') // should cost 0 eth
   })
-  it.skip('buy 1 NFT for 1 JAY and 0.01 ETH', async () => {
+  it('buy 1 NFT for 1 JAY and 0.01 ETH', async () => {
     const expectedEthCost = 0.01
 
     await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
       await menuItems[3].click()
     })
+
+    await delay(3000) // TODO: waiting for NFTs to load
+    await page.waitForSelector('.searchBox')
+    await page.click('.searchBox')
+    await page.$x("//li[contains(., 'Halo 3 Profile - Test')]").then( async (elements) => {
+     await elements[0].click()
+    })
+
+    // Have to close the collection selection dropdown. Feedback given
+    await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
+      await menuItems[3].click()
+    })    
     
     await page.waitForSelector('.imgPickerContainer')
     await page.$$('.imgPickerContainer').then( async (elements) => {
@@ -149,6 +161,18 @@
   it('sell 1 NFT for 0.001 ETH and receive JAY', async () => {
     const expectedEthCost = 0.001
 
+    await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
+      await menuItems[2].click()
+    })
+
+    await delay(3000) // TODO: waiting for NFTs to load
+    await page.waitForSelector('.searchBox')
+    await page.click('.searchBox')
+    await page.$x("//li[contains(., 'Halo 3 Profile - Test')]").then( async (elements) => {
+     await elements[0].click()
+    })
+
+    // Have to close the collection selection dropdown
     await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
       await menuItems[2].click()
     })

@@ -4,7 +4,7 @@
   "description": "Testing Jaypeggers daap",
   "main": "index.js",
   "scripts": {
-    "test": "node ./node_modules/mocha/bin/mocha --timeout=3000000 ./test"
+    "test": "node ./node_modules/mocha/bin/mocha --timeout=3000000 ./test --reporter mochawesome"
   },
   "repository": {
     "type": "git",
@@ -22,6 +22,8 @@
     "chai": "^4.3.6",
     "mocha": "^10.0.0",
     "mocha-puppeteer": "^0.14.0",
+    "mochawesome": "^7.1.3",
+    "mochawesome-report-generator": "^6.2.0",
     "node": "^18.5.0",
     "web3": "^1.7.4"
   }

@@ -24,6 +24,7 @@ npm i --save-dev mocha-puppeteer
 npm i --save-dev chai
 npm i --save-dev node
 npm i --save-dev web3
+npm i mochawesome mochawesome-report-generator --save-dev
 ```
 
 You'll need a config.js at project root that contains sensitive data (ASK ME FOR TEMPLATE)
