@@ -66,7 +66,7 @@ const { DECIMALS } = require('../constants.js');
  })
  
  describe('Jaypeggers TX Tests', () => {
-  it.skip('buys JAY with 0.001 ETH', async () => {
+  it('buys JAY with 0.001 ETH', async () => {
     const convertAmt = 0.001
 
     await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
@@ -94,7 +94,7 @@ const { DECIMALS } = require('../constants.js');
     const convertAmt = 0.001
     let startingJay
 
-    var supply = api.account.tokenbalance(config.WALLET_ADDRESS, '', config.CONTRACT_ADDRESS)
+    var supply = api.account.tokenbalance(config.WALLET_ADDRESS, '', config.VAULT_ADDRESS)
     supply.then( (data) => {
       startingJay = data.result / constants.DECIMALS
     })
@@ -120,15 +120,26 @@ const { DECIMALS } = require('../constants.js');
     let senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
     expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql('0') // should cost 0 eth
 
-    var supply = api.account.tokenbalance(config.WALLET_ADDRESS, '', config.CONTRACT_ADDRESS)
+    var supply = api.account.tokenbalance(config.WALLET_ADDRESS, '', config.VAULT_ADDRESS)
     supply.then( (data) => {
       return data.result / constants.DECIMALS
     }).then((endingJay) => {
       expect(startingJay - convertAmt).to.eql(endingJay) // should have 0.001 less JAY in wallet
     }) 
   })
-  it.skip('buy 1 NFT for 1 JAY and 0.01 ETH', async () => {
+  it('buy 1 NFT for 1 JAY and 0.01 ETH', async () => {
     const expectedEthCost = 0.01
+    let vaultStartingEth, teamStartingEth
+
+    var vaultEth = api.account.balance(config.VAULT_ADDRESS)
+    vaultEth.then( (data) => {
+      vaultStartingEth = web3.utils.fromWei(data, 'ether')
+    })
+
+    var teamEth = api.account.balance(config.TEAM_ADDRESS)
+    teamEth.then( (data) => {
+      teamStartingEth = web3.utils.fromWei(data, 'ether')
+    })
 
     await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
       await menuItems[3].click()
@@ -141,7 +152,7 @@ const { DECIMALS } = require('../constants.js');
      await elements[0].click()
     })
 
-    // Have to close the collection selection dropdown. Feedback given
+    // HACK: Have to close the collection selection dropdown. Feedback given
     await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
       await menuItems[3].click()
     })    
@@ -163,9 +174,23 @@ const { DECIMALS } = require('../constants.js');
 
     // Post tx verification
     let senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
-    expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql(expectedEthCost.toString()) // should cost 0.01 eth
+    expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql(expectedEthCost.toString()) // should cost 0.01 eth from User
+
+    var vaultEndEth = api.account.balance(config.VAULT_ADDRESS)
+    vaultEndEth.then( (data) => {
+      return web3.utils.fromWei(data, 'ether')
+    }).then((endEth) => {
+      expect(vaultStartingEth + (expectedEthCost / 2)).to.eql(endEth) // should have 0.0005 eth sent to Vault
+    })
+
+    var teamEndEth = api.account.balance(config.TEAM_ADDRESS)
+    teamEndEth.then( (data) => {
+      return web3.utils.fromWei(data, 'ether')
+    }).then((endEth) => {
+      expect(teamStartingEth + (expectedEthCost / 2)).to.eql(endEth) // should have 0.0005 eth sent to Team
+    })
   })
-  it.skip('sell 1 NFT for 0.001 ETH and receive JAY', async () => {
+  it('sell 1 NFT for 0.001 ETH and receive JAY', async () => {
     const expectedEthCost = 0.001
 
     await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
@@ -203,7 +228,7 @@ const { DECIMALS } = require('../constants.js');
     let senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
     expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql(expectedEthCost.toString()) // should cost 0.001 eth
   })
-  it('test', () => {
+  it.skip('test', () => {
 
   })
  })
@@ -234,7 +259,7 @@ async function getSenderTx(startBlock, sender) {
 
 // Gets the current decimal formatted balance of JAY for automation wallet
 function getJayBalance() {
-  var supply = api.account.tokenbalance(config.WALLET_ADDRESS, '', config.CONTRACT_ADDRESS)
+  var supply = api.account.tokenbalance(config.WALLET_ADDRESS, '', config.VAULT_ADDRESS)
   supply.then( (data) => {
     return data.result / constants.DECIMALS
   })
