@@ -20,6 +20,7 @@
   "devDependencies": {
     "@chainsafe/dappeteer": "^3.0.0-rc.0",
     "chai": "^4.3.6",
+    "etherscan-api": "^10.2.0",
     "mocha": "^10.0.0",
     "mocha-puppeteer": "^0.14.0",
     "mochawesome": "^7.1.3",

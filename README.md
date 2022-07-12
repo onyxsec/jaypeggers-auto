@@ -25,6 +25,7 @@ npm i --save-dev chai
 npm i --save-dev node
 npm i --save-dev web3
 npm i mochawesome mochawesome-report-generator --save-dev
+npm i --save-dev etherscan-api
 ```
 
 You'll need a config.js at project root that contains sensitive data (ASK ME FOR TEMPLATE)

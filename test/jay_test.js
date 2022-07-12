@@ -8,14 +8,16 @@
  const Web3 = require("web3");
  const config = require('../config.js')
  const constants = require('../constants.js')
+ const api = require('etherscan-api').init(config.ETHERSCAN_KEY, 'rinkeby', '6000')
  const puppeteer = require('puppeteer')
- const dappeteer = require('@chainsafe/dappeteer')
+ const dappeteer = require('@chainsafe/dappeteer');
+const { DECIMALS } = require('../constants.js');
 
  let browser, page, tabs, web3, startingEthBalance, startingBlock, metamask
 
  before(async () => {
   browser = await dappeteer.launch(puppeteer, {
-    metamaskVersion: config.METAMASK_VERSION,
+    metamaskVersion: constants.METAMASK_VERSION,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   })
 
@@ -87,17 +89,15 @@
     // Post tx verification
     const senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
     expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql(convertAmt.toString()) // should cost 0.001 eth
-
-    /*await web3.eth.getBalance(config.WALLET_ADDRESS).then((rawBalance) => {
-      return web3.utils.fromWei(rawBalance, 'ether')
-    })
-    .then((currentEthBalance) => {
-      // TODO: take tx cost into account or approx range or log for visual compare or something...
-      expect(currentEthBalance).to.eql(startingEthBalance - convertAmt)
-    })*/
   })
-  it.skip('sells 0.001 JAY for ETH', async () => {
+  it('sells 0.001 JAY for ETH', async () => {
     const convertAmt = 0.001
+    let startingJay
+
+    var supply = api.account.tokenbalance(config.WALLET_ADDRESS, '', config.CONTRACT_ADDRESS)
+    supply.then( (data) => {
+      startingJay = data.result / constants.DECIMALS
+    })
 
     await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
       await menuItems[4].click()
@@ -119,8 +119,15 @@
     // Post tx verification
     let senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
     expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql('0') // should cost 0 eth
+
+    var supply = api.account.tokenbalance(config.WALLET_ADDRESS, '', config.CONTRACT_ADDRESS)
+    supply.then( (data) => {
+      return data.result / constants.DECIMALS
+    }).then((endingJay) => {
+      expect(startingJay - convertAmt).to.eql(endingJay) // should have 0.001 less JAY in wallet
+    }) 
   })
-  it('buy 1 NFT for 1 JAY and 0.01 ETH', async () => {
+  it.skip('buy 1 NFT for 1 JAY and 0.01 ETH', async () => {
     const expectedEthCost = 0.01
 
     await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
@@ -158,7 +165,7 @@
     let senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
     expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql(expectedEthCost.toString()) // should cost 0.01 eth
   })
-  it('sell 1 NFT for 0.001 ETH and receive JAY', async () => {
+  it.skip('sell 1 NFT for 0.001 ETH and receive JAY', async () => {
     const expectedEthCost = 0.001
 
     await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
@@ -196,18 +203,14 @@
     let senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
     expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql(expectedEthCost.toString()) // should cost 0.001 eth
   })
+  it('test', () => {
+
+  })
  })
  
  after( async () => {
    await browser.close()
  })
-
-// Generic delay
-function delay(time_in_ms) {
-  return new Promise(function(resolve) { 
-      setTimeout(resolve, time_in_ms)
-  })
-}
 
 // Searches blocks between start and current and returns first sender tx
 async function getSenderTx(startBlock, sender) {
@@ -227,4 +230,19 @@ async function getSenderTx(startBlock, sender) {
     }
   }
   throw new Error('No sender transactions found...')
+}
+
+// Gets the current decimal formatted balance of JAY for automation wallet
+function getJayBalance() {
+  var supply = api.account.tokenbalance(config.WALLET_ADDRESS, '', config.CONTRACT_ADDRESS)
+  supply.then( (data) => {
+    return data.result / constants.DECIMALS
+  })
+}
+
+// Generic delay
+function delay(time_in_ms) {
+  return new Promise(function(resolve) { 
+      setTimeout(resolve, time_in_ms)
+  })
 }
