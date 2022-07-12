@@ -1,5 +1,5 @@
 /**
- * @name onyxsec
+ * @name https://github.com/onyxsec/jaypeggers-auto / etherealsec@gmail.com
  * @desc Test Jaypeggers
  */
 
@@ -180,14 +180,14 @@ const { DECIMALS } = require('../constants.js');
     vaultEndEth.then( (data) => {
       return web3.utils.fromWei(data, 'ether')
     }).then((endEth) => {
-      expect(vaultStartingEth + (expectedEthCost / 2)).to.eql(endEth) // should have 0.0005 eth sent to Vault
+      expect(vaultStartingEth + (expectedEthCost / 2)).to.eql(endEth) // should have 0.005 eth sent to Vault
     })
 
     var teamEndEth = api.account.balance(config.TEAM_ADDRESS)
     teamEndEth.then( (data) => {
       return web3.utils.fromWei(data, 'ether')
     }).then((endEth) => {
-      expect(teamStartingEth + (expectedEthCost / 2)).to.eql(endEth) // should have 0.0005 eth sent to Team
+      expect(teamStartingEth + (expectedEthCost / 2)).to.eql(endEth) // should have 0.005 eth sent to Team
     })
   })
   it('sell 1 NFT for 0.001 ETH and receive JAY', async () => {
