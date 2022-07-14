@@ -272,9 +272,10 @@ async function confirmTxAndClose() {
   await delay(6000) // TODO: wait for mm confirm btn, not sure how
   await metamask.confirmTransaction()
   await page.bringToFront()
-  await delay(35000) // TODO: wait for tx, maybe stick in polling loop
+  //await delay(35000) // TODO: wait for tx, maybe stick in polling loop
 
   // Close transaction message
+  await page.waitForXPath("//button[contains(text(), 'Close')]", {timeout: 35000})
   await page.$x("//button[contains(text(), 'Close')]").then( async (elements) => {
     await delay(2000) // flakey
     await elements[0].click()
