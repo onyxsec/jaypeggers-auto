@@ -276,6 +276,7 @@ async function confirmTxAndClose() {
 
   // Close transaction message
   await page.$x("//button[contains(text(), 'Close')]").then( async (elements) => {
+    await delay(2000) // flakey
     await elements[0].click()
   })    
 }
