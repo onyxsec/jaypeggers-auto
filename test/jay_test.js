@@ -83,8 +83,14 @@ const { DECIMALS } = require('../constants.js');
     })
 
     await delay(6000) // TODO: wait for mm confirm btn, not sure how
-    await metamask.confirmTransaction() 
+    await metamask.confirmTransaction()
+    await page.bringToFront() 
     await delay(35000) // TODO: wait for tx, maybe stick in polling loop
+
+    // Close transaction message
+    await page.$x("//button[contains(text(), 'Close')]").then( async (elements) => {
+      await elements[0].click()
+    })
 
     // Post tx verification
     const senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
@@ -112,9 +118,7 @@ const { DECIMALS } = require('../constants.js');
       await elements[0].click()
     })
 
-    await delay(6000) // TODO: wait for mm confirm btn, not sure how
-    await metamask.confirmTransaction() 
-    await delay(35000) // TODO: wait for tx, maybe stick in polling loop
+    await confirmTxAndClose()    
 
     // Post tx verification
     let senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
@@ -148,8 +152,13 @@ const { DECIMALS } = require('../constants.js');
     await delay(3000) // TODO: waiting for NFTs to load
     await page.waitForSelector('.searchBox')
     await page.click('.searchBox')
+    await delay(3000) // flakey: waiting for li's to populate
     await page.$x("//li[contains(., 'Halo 3 Profile - Test')]").then( async (elements) => {
-     await elements[0].click()
+      await delay(3000) // flakey: waiting for li's to populate
+      if (elements.length == 0) {
+        throw new Error('Could not find button')
+      }
+      await elements[0].click()
     })
 
     // HACK: Have to close the collection selection dropdown. Feedback given
@@ -168,9 +177,7 @@ const { DECIMALS } = require('../constants.js');
       await elements[0].click()
     })
 
-    await delay(6000) // TODO: wait for mm confirm btn, not sure how
-    await metamask.confirmTransaction() 
-    await delay(35000) // TODO: wait for tx, maybe stick in polling loop
+    await confirmTxAndClose()
 
     // Post tx verification
     let senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
@@ -200,7 +207,12 @@ const { DECIMALS } = require('../constants.js');
     await delay(3000) // TODO: waiting for NFTs to load
     await page.waitForSelector('.searchBox')
     await page.click('.searchBox')
+    await delay(3000) //flakey: waiting for li's to populate
     await page.$x("//li[contains(., 'Halo 3 Profile - Test')]").then( async (elements) => {
+      await delay(3000) // flakey: waiting for li's to populate
+      if (elements.length == 0) {
+        throw new Error('Could not find button')
+      }
      await elements[0].click()
     })
 
@@ -220,9 +232,7 @@ const { DECIMALS } = require('../constants.js');
       await elements[0].click()
     })
 
-    await delay(6000) // TODO: wait for mm confirm btn, not sure how
-    await metamask.confirmTransaction() 
-    await delay(35000) // TODO: wait for tx, maybe stick in polling loop
+    await confirmTxAndClose()
 
     // Post tx verification
     let senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
@@ -255,6 +265,19 @@ async function getSenderTx(startBlock, sender) {
     }
   }
   throw new Error('No sender transactions found...')
+}
+
+// Confirm metamask transaction and close transaction pop up
+async function confirmTxAndClose() {
+  await delay(6000) // TODO: wait for mm confirm btn, not sure how
+  await metamask.confirmTransaction()
+  await page.bringToFront()
+  await delay(35000) // TODO: wait for tx, maybe stick in polling loop
+
+  // Close transaction message
+  await page.$x("//button[contains(text(), 'Close')]").then( async (elements) => {
+    await elements[0].click()
+  })    
 }
 
 // Gets the current decimal formatted balance of JAY for automation wallet
