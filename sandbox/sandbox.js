@@ -76,7 +76,6 @@ describe('Jaypeggers TX Tests', () => {
     }
     console.log('addrs lengh: ' + inputValues.length)
     console.log("addr: " + inputValues[1])
-    receievedJay = inputValues[1]
   })
 })
 
@@ -147,4 +146,4 @@ function delay(time_in_ms) {
  return new Promise(function(resolve) { 
      setTimeout(resolve, time_in_ms)
  })
-}
+}})

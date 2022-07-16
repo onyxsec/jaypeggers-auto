@@ -78,16 +78,13 @@
     await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
       await menuItems[5].click()
     })
-    await page.reload({ waitUntil: ["networkidle0", "domcontentloaded"] })
-    //await delay()
     
     await page.focus('div.MuiBox-root.css-0 > div > div > div > div:nth-child(1) > div > input').then( async () => {
       for(let char of convertAmt.toString().split())
         await page.keyboard.type(char)
-        await delay(2000)
+        await delay(1000) // TODO: Bug where price doesn't display if you type too fast
     })
     
-    await delay(6000) // TODO: btn needs to convert to clickable 'Buy', waitForXPath doesn't help
     let receievedJay
     let inputValues = []
     await page.$$('.MuiInputBase-input').then( async (elements) => {
@@ -96,20 +93,14 @@
      }
      receievedJay = inputValues[1]
    })
-    console.log('recieved jay: ' + JSON.stringify(receievedJay))
+   console.log('recieved jay: ' + JSON.stringify(receievedJay))   
+
+   await delay(6000) // TODO: btn needs to convert to clickable 'Buy', waitForXPath doesn't help
     await page.$x("//button[contains(text(), 'Buy')]").then( async (elements) => {
       await elements[0].click()
     })
 
-    await delay(6000) // TODO: wait for mm confirm btn, not sure how
-    await metamask.confirmTransaction()
-    await page.bringToFront() 
-    await delay(35000) // TODO: wait for tx, maybe stick in polling loop
-
-    // Close transaction message
-    await page.$x("//button[contains(text(), 'Close')]").then( async (elements) => {
-      await elements[0].click()
-    })
+    await confirmTxAndClose()
 
     // Post tx verification
     const senderTxData = await getSenderTx(startingBlock, constants.USER_ADDRESS)
@@ -118,8 +109,8 @@
     await getTokenBalances(jayAddrs, constants.VAULT_ADDRESS, DECIMALS).then((balancesMap) => {
       console.log('Ending Jay Balances: ' + JSON.stringify(balancesMap))
       endingJayBalances = balancesMap
-      // TODO: bug where the JAY price displays 0 in UI
-      //expect(startingJayBalances[constants.USER_ADDRESS] + receievedJay).to.be.eql(endingJayBalances[constants.USER_ADDRESS])
+      expect(toFixed(Number(startingJayBalances[constants.USER_ADDRESS]) + Number(receievedJay), 4)) // should recieve exact amount of JAY
+        .to.be.eql(toFixed(endingJayBalances[constants.USER_ADDRESS], 4))
     })
   })
   it.skip('sells 0.001 JAY for ETH', async () => {
@@ -310,6 +301,18 @@
  after( async () => {
    await browser.close()
  })
+
+ function toFixed(num, fixed) {
+  var re = new RegExp('^-?\\d+(?:\.\\d{0,' + (fixed || -1) + '})?')
+  return num.toString().match(re)[0]
+}
+
+async function metamaskConfirmFlow() {
+  await delay(6000) // TODO: wait for mm confirm btn, not sure how
+  await metamask.confirmTransaction()
+  await page.bringToFront() 
+  await delay(35000) // TODO: wait for tx, maybe stick in polling loop
+}
 
 async function getTokenBalances(getAddrs, contractAddr, decimals) {
   let balances = {}
