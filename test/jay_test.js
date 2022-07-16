@@ -3,15 +3,15 @@
  * @desc Test Jaypeggers
  */
 
- const assert = require('assert')
- const { expect } = require('chai')
- const Web3 = require("web3");
- const config = require('../config.js')
- const constants = require('../constants.js')
- const api = require('etherscan-api').init(config.ETHERSCAN_KEY, 'rinkeby', '6000')
- const puppeteer = require('puppeteer')
- const dappeteer = require('@chainsafe/dappeteer');
-const { DECIMALS } = require('../constants.js');
+  const assert = require('assert')
+  const { expect } = require('chai')
+  const Web3 = require("web3");
+  const config = require('../config.js')
+  const constants = require('../constants.js')
+  const api = require('etherscan-api').init(config.ETHERSCAN_KEY, 'rinkeby', '6000')
+  const puppeteer = require('puppeteer')
+  const dappeteer = require('@chainsafe/dappeteer');
+  const { DECIMALS } = require('../constants.js');
 
  let browser, page, tabs, web3, startingEthBalance, startingBlock, metamask
 
@@ -53,7 +53,7 @@ const { DECIMALS } = require('../constants.js');
  
  beforeEach(async () => {
   await page.bringToFront()
-  await web3.eth.getBalance(config.WALLET_ADDRESS).then((rawStartingBalance) => {
+  await web3.eth.getBalance(constants.USER_ADDRESS).then((rawStartingBalance) => {
     startingEthBalance = web3.utils.fromWei(rawStartingBalance, 'ether')
   })
   console.log("Current ETH Balance: " + startingEthBalance)
@@ -66,18 +66,37 @@ const { DECIMALS } = require('../constants.js');
  })
  
  describe('Jaypeggers TX Tests', () => {
-  it('buys JAY with 0.001 ETH', async () => {
-    const convertAmt = 0.001
+  it('buys JAY with 0.01 ETH', async () => {
+    const convertAmt = 0.01
+    const jayAddrs = [constants.USER_ADDRESS]
+    let startingJayBalances, endingJayBalances
+    await getTokenBalances(jayAddrs, constants.VAULT_ADDRESS, DECIMALS).then((balancesMap) => {
+      console.log('Starting Balances: ' + JSON.stringify(balancesMap))
+      startingJayBalances = balancesMap
+    })
 
     await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
       await menuItems[5].click()
     })
+    await page.reload({ waitUntil: ["networkidle0", "domcontentloaded"] })
+    //await delay()
     
-    await page.focus('div.MuiBox-root.css-0 > div > div > div > div:nth-child(1) > div > input').then(() => {
-      page.keyboard.type(convertAmt.toString())
+    await page.focus('div.MuiBox-root.css-0 > div > div > div > div:nth-child(1) > div > input').then( async () => {
+      for(let char of convertAmt.toString().split())
+        await page.keyboard.type(char)
+        await delay(2000)
     })
     
     await delay(6000) // TODO: btn needs to convert to clickable 'Buy', waitForXPath doesn't help
+    let receievedJay
+    let inputValues = []
+    await page.$$('.MuiInputBase-input').then( async (elements) => {
+     for( let styleNumber of elements) {
+       inputValues.push(await page.evaluate(el => el.getAttribute("value"), styleNumber))
+     }
+     receievedJay = inputValues[1]
+   })
+    console.log('recieved jay: ' + JSON.stringify(receievedJay))
     await page.$x("//button[contains(text(), 'Buy')]").then( async (elements) => {
       await elements[0].click()
     })
@@ -93,14 +112,21 @@ const { DECIMALS } = require('../constants.js');
     })
 
     // Post tx verification
-    const senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
+    const senderTxData = await getSenderTx(startingBlock, constants.USER_ADDRESS)
     expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql(convertAmt.toString()) // should cost 0.001 eth
+
+    await getTokenBalances(jayAddrs, constants.VAULT_ADDRESS, DECIMALS).then((balancesMap) => {
+      console.log('Ending Jay Balances: ' + JSON.stringify(balancesMap))
+      endingJayBalances = balancesMap
+      // TODO: bug where the JAY price displays 0 in UI
+      //expect(startingJayBalances[constants.USER_ADDRESS] + receievedJay).to.be.eql(endingJayBalances[constants.USER_ADDRESS])
+    })
   })
-  it('sells 0.001 JAY for ETH', async () => {
+  it.skip('sells 0.001 JAY for ETH', async () => {
     const convertAmt = 0.001
     let startingJay
 
-    var supply = api.account.tokenbalance(config.WALLET_ADDRESS, '', config.VAULT_ADDRESS)
+    var supply = api.account.tokenbalance(constants.USER_ADDRESS, '', constants.VAULT_ADDRESS)
     supply.then( (data) => {
       startingJay = data.result / constants.DECIMALS
     })
@@ -114,6 +140,8 @@ const { DECIMALS } = require('../constants.js');
     })
     
     await delay(6000) // TODO: btn needs to convert to clickable 'Sell', waitForXPath doesn't help
+    const element = await page.waitForSelector('.MuiTypography-subtitle2')
+    const receievedJay = await element.evaluate(el => el.textContent)
     await page.$x("//button[contains(text(), 'Sell')]").then( async (elements) => {
       await elements[0].click()
     })
@@ -121,26 +149,36 @@ const { DECIMALS } = require('../constants.js');
     await confirmTxAndClose()    
 
     // Post tx verification
-    let senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
+    let senderTxData = await getSenderTx(startingBlock, constants.USER_ADDRESS)
     expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql('0') // should cost 0 eth
 
-    var supply = api.account.tokenbalance(config.WALLET_ADDRESS, '', config.VAULT_ADDRESS)
+    var supply = api.account.tokenbalance(constants.USER_ADDRESS, '', constants.VAULT_ADDRESS)
     supply.then( (data) => {
       return data.result / constants.DECIMALS
     }).then((endingJay) => {
       expect(startingJay - convertAmt).to.eql(endingJay) // should have 0.001 less JAY in wallet
     }) 
   })
-  it('buy 1 NFT for 1 JAY and 0.01 ETH', async () => {
+  it.skip('buy 1 NFT for 1 JAY and 0.01 ETH', async () => {
     const expectedEthCost = 0.01
-    let vaultStartingEth, teamStartingEth
+    let vaultStartingEth, teamStartingEth, userStartingJay, burnStartingJay
 
-    var vaultEth = api.account.balance(config.VAULT_ADDRESS)
+    var supply = api.account.tokenbalance(constants.USER_ADDRESS, '', constants.VAULT_ADDRESS)
+    supply.then( (data) => {
+      userStartingJay = data.result / constants.DECIMALS
+    })
+
+    var supply = api.account.tokenbalance(constants.BURN_ADDRESS, '', constants.VAULT_ADDRESS)
+    supply.then( (data) => {
+      burnStartingJay = data.result / constants.DECIMALS
+    })
+
+    var vaultEth = api.account.balance(constants.VAULT_ADDRESS)
     vaultEth.then( (data) => {
       vaultStartingEth = web3.utils.fromWei(data, 'ether')
     })
 
-    var teamEth = api.account.balance(config.TEAM_ADDRESS)
+    var teamEth = api.account.balance(constants.TEAM_ADDRESS)
     teamEth.then( (data) => {
       teamStartingEth = web3.utils.fromWei(data, 'ether')
     })
@@ -180,24 +218,39 @@ const { DECIMALS } = require('../constants.js');
     await confirmTxAndClose()
 
     // Post tx verification
-    let senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
+    let senderTxData = await getSenderTx(startingBlock, constants.USER_ADDRESS)
     expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql(expectedEthCost.toString()) // should cost 0.01 eth from User
 
-    var vaultEndEth = api.account.balance(config.VAULT_ADDRESS)
+    var vaultEndEth = api.account.balance(constants.VAULT_ADDRESS)
     vaultEndEth.then( (data) => {
       return web3.utils.fromWei(data, 'ether')
     }).then((endEth) => {
       expect(vaultStartingEth + (expectedEthCost / 2)).to.eql(endEth) // should have 0.005 eth sent to Vault
     })
 
-    var teamEndEth = api.account.balance(config.TEAM_ADDRESS)
+    var teamEndEth = api.account.balance(constants.TEAM_ADDRESS)
     teamEndEth.then( (data) => {
       return web3.utils.fromWei(data, 'ether')
     }).then((endEth) => {
       expect(teamStartingEth + (expectedEthCost / 2)).to.eql(endEth) // should have 0.005 eth sent to Team
     })
+
+    var supply = api.account.tokenbalance(constants.USER_ADDRESS, '', constants.VAULT_ADDRESS)
+    supply.then( (data) => {
+      return data.result / constants.DECIMALS
+    }).then((endingJay) => {
+      console.log('ending jay: ' + endingJay)
+      expect(userStartingJay - 1).to.eql(endingJay) // should have 1 less JAY in User address
+    })
+
+    var supply = api.account.tokenbalance(constants.BURN_ADDRESS, '', constants.VAULT_ADDRESS)
+    await supply.then( (data) => {
+      return data.result / constants.DECIMALS
+    }).then((endingJay) => {
+      expect(burnStartingJay + 1).to.eql(endingJay) // should have 1 JAY sent to Burn address
+    })
   })
-  it('sell 1 NFT for 0.001 ETH and receive JAY', async () => {
+  it.skip('sell 1 NFT for 0.001 ETH and receive JAY', async () => {
     const expectedEthCost = 0.001
 
     await page.$$(constants.MENU_ITEMS).then( async (menuItems) => {
@@ -235,17 +288,43 @@ const { DECIMALS } = require('../constants.js');
     await confirmTxAndClose()
 
     // Post tx verification
-    let senderTxData = await getSenderTx(startingBlock, config.WALLET_ADDRESS)
+    let senderTxData = await getSenderTx(startingBlock, constants.USER_ADDRESS)
     expect(web3.utils.fromWei(senderTxData.value, 'ether')).to.eql(expectedEthCost.toString()) // should cost 0.001 eth
   })
-  it.skip('test', () => {
+  it.skip('test', async () => {
 
+    await getTokenBalances([constants.USER_ADDRESS, constants.TEAM_ADDRESS], constants.VAULT_ADDRESS, DECIMALS).then((balancesMap) => {
+        console.log('end: ' + JSON.stringify(balancesMap))
+        //expect(burnStartingJay + 1).to.eql(endJay)
+    })
+
+   // console.log(JSON.stringify(dict))
+    // WORKS
+    /*await getTokenBalance(constants.USER_ADDRESS, constants.VAULT_ADDRESS, DECIMALS).then((endJay) => {
+        console.log('end: ' + endJay)
+        expect(burnStartingJay + 1).to.eql(endJay)
+    })*/
   })
  })
  
  after( async () => {
    await browser.close()
  })
+
+async function getTokenBalances(getAddrs, contractAddr, decimals) {
+  let balances = {}
+  for (const addr of getAddrs) {
+    let supply = await api.account.tokenbalance(addr, '', contractAddr)
+    balances[addr] = supply.result / decimals
+  }
+  return balances
+}
+
+// Get the token balance of an address
+async function getTokenBalance(getAddr, contractAddr, decimals) {
+  let supply = await api.account.tokenbalance(getAddr, '', contractAddr)
+  return supply.result / decimals
+}
 
 // Searches blocks between start and current and returns first sender tx
 async function getSenderTx(startBlock, sender) {
@@ -284,7 +363,7 @@ async function confirmTxAndClose() {
 
 // Gets the current decimal formatted balance of JAY for automation wallet
 function getJayBalance() {
-  var supply = api.account.tokenbalance(config.WALLET_ADDRESS, '', config.VAULT_ADDRESS)
+  var supply = api.account.tokenbalance(constants.USER_ADDRESS, '', constants.VAULT_ADDRESS)
   supply.then( (data) => {
     return data.result / constants.DECIMALS
   })

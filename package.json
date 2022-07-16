@@ -4,7 +4,8 @@
   "description": "Testing Jaypeggers daap",
   "main": "index.js",
   "scripts": {
-    "test": "node ./node_modules/mocha/bin/mocha --timeout=3000000 ./test --reporter mochawesome"
+    "test": "node ./node_modules/mocha/bin/mocha --timeout=3000000 ./test --reporter mochawesome",
+    "sandbox": "node ./node_modules/mocha/bin/mocha --timeout=3000000 ./sandbox --reporter mochawesome"
   },
   "repository": {
     "type": "git",
